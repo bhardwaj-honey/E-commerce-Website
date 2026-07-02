@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWave — Modern E-Commerce</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    /* ── Hero ── */
+    .hero {
+      padding: 100px 0 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -100px; right: -200px;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-content { max-width: 600px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--indigo-lt); color: var(--indigo);
+      padding: 6px 14px; border-radius: 999px;
+      font-size: 13px; font-weight: 600; margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 800; line-height: 1.1; margin-bottom: 20px;
+    }
+ .hero-title span {
+  background: linear-gradient(135deg, var(--indigo), var(--teal));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+    .hero-desc { color: var(--gray-2); font-size: 18px; margin-bottom: 36px; max-width: 480px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-stats {
+      display: flex; gap: 40px; margin-top: 56px;
+    }
+    .hero-stat-number { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+    .hero-stat-label  { color: var(--gray-3); font-size: 13px; margin-top: 2px; }
+
+    /* ── Category grid ── */
+    .categories-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    }
+    .category-card {
+      background: var(--navy-2);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; transition: var(--transition);
+      text-align: center; padding: 24px 16px;
+    }
+    .category-card:hover {
+      border-color: var(--indigo);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(99,102,241,.2);
+    }
+    .category-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      object-fit: cover; margin: 0 auto 12px;
+    }
+    .category-name { font-weight: 600; font-size: 14px; }
+
+    /* ── Products grid ── */
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;
+    }
+    .product-card {
+      background: var(--navy-2);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); overflow: hidden;
+      transition: var(--transition); cursor: pointer;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 36px rgba(0,0,0,.4);
+      border-color: rgba(99,102,241,.3);
+    }
+    .product-img {
+      width: 100%; height: 220px; object-fit: cover;
+    }
+    .product-body  { padding: 16px; }
+    .product-cat   { font-size: 11px; font-weight: 600; color: var(--indigo); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .product-name  { font-weight: 600; font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
+    .product-meta  { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+    .product-price-row { display: flex; align-items: center; justify-content: space-between; }
+    .price         { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+    .price-old     { font-size: 13px; color: var(--gray-3); text-decoration: line-through; }
+    .discount-tag  { background: rgba(244,63,94,.15); color: var(--rose); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+
+    /* ── Trust bar ── */
+    .trust-bar {
+      background: var(--navy-2); border-top: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07);
+      padding: 32px 0;
+    }
+    .trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .trust-item { display: flex; align-items: center; gap: 14px; }
+    .trust-icon { font-size: 28px; }
+    .trust-title { font-weight: 600; font-size: 14px; }
+    .trust-desc  { color: var(--gray-3); font-size: 12px; margin-top: 2px; }
+
+    @media (max-width: 768px) {
+      .categories-grid { grid-template-columns: repeat(3, 1fr); }
+      .trust-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-eyebrow">✦ New arrivals every week</div>
+        <h1 class="hero-title">Shop the things<br>you <span>actually want</span></h1>
+        <p class="hero-desc">Curated products across electronics, fashion, home, sports and more. Free delivery on orders over ₹499.</p>
+        <div class="hero-actions">
+          <a href="products.html" class="btn btn-primary btn-lg">Browse Products</a>
+          <a href="register.html" class="btn btn-outline btn-lg">Create Account</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-number">10K+</div>
+            <div class="hero-stat-label">Products</div>
+          </div>
+          <div>
+            <div class="hero-stat-number">50K+</div>
+            <div class="hero-stat-label">Customers</div>
+          </div>
+          <div>
+            <div class="hero-stat-number">4.8★</div>
+            <div class="hero-stat-label">Avg Rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust bar -->
+  <div class="trust-bar">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-item">
+          <div class="trust-icon">🚚</div>
+          <div><div class="trust-title">Free Delivery</div><div class="trust-desc">On orders over ₹499</div></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🔄</div>
+          <div><div class="trust-title">Easy Returns</div><div class="trust-desc">30-day return policy</div></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🔒</div>
+          <div><div class="trust-title">Secure Payment</div><div class="trust-desc">256-bit SSL encryption</div></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🎧</div>
+          <div><div class="trust-title">24/7 Support</div><div class="trust-desc">We're always here for you</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Shop by Category</h2>
+      <p class="section-sub mt-8" style="margin-bottom: 32px">Find what you're looking for in our curated collections</p>
+      <div class="categories-grid" id="categories-grid">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px">
+        <div>
+          <h2 class="section-title">Featured Products</h2>
+          <p class="section-sub mt-8">Hand-picked just for you</p>
+        </div>
+        <a href="products.html" class="btn btn-outline">View All →</a>
+      </div>
+      <div class="products-grid" id="products-grid">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar('home');
+  renderFooter();
+
+  async function loadCategories() {
+    const res = await API.get('/categories');
+    const grid = document.getElementById('categories-grid');
+    if (!res?.data?.length) { grid.innerHTML = '<p>No categories found.</p>'; return; }
+    grid.innerHTML = res.data.map(cat => `
+      <div class="category-card" onclick="window.location.href='/pages/products.html?category=${cat.id}'">
+        <img class="category-icon" src="${cat.imageUrl}" alt="${cat.name}" onerror="this.src='https://via.placeholder.com/64'">
+        <div class="category-name">${cat.name}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadFeaturedProducts() {
+    const res = await API.get('/products/featured');
+    const grid = document.getElementById('products-grid');
+    if (!res?.data?.length) { grid.innerHTML = '<p>No products found.</p>'; return; }
+    grid.innerHTML = res.data.slice(0, 8).map(p => renderProductCard(p)).join('');
+  }
+
+  function renderProductCard(p) {
+    const hasDiscount = p.discountPercent > 0;
+    return `
+      <div class="product-card" onclick="window.location.href='/pages/products.html?product=${p.id}'">
+        <img class="product-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/260x220'">
+        <div class="product-body">
+          <div class="product-cat">${p.categoryName}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-meta">
+            <span class="stars">${renderStars(p.rating)}</span>
+            <span style="font-size:12px;color:var(--gray-3)">(${p.reviewCount?.toLocaleString()})</span>
+          </div>
+          <div class="product-price-row">
+            <div>
+              <span class="price">${formatINR(p.price)}</span>
+              ${hasDiscount ? `<span class="price-old" style="margin-left:6px">${formatINR(p.originalPrice)}</span>` : ''}
+            </div>
+            ${hasDiscount ? `<span class="discount-tag">${p.discountPercent}% OFF</span>` : ''}
+          </div>
+          <button class="btn btn-primary btn-sm btn-full" style="margin-top:12px"
+            onclick="event.stopPropagation(); Cart.addItem(${p.id})">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  loadCategories();
+  loadFeaturedProducts();
+</script>
+</body>
+</html>
