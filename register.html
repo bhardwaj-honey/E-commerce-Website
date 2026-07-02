@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — ShopWave</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .auth-wrapper {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 48px 24px;
+    }
+    .auth-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px; padding: 48px 40px; width: 100%; max-width: 460px;
+      box-shadow: var(--shadow);
+    }
+    .auth-logo { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .auth-logo span { color: var(--indigo); }
+    .auth-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .auth-sub   { color: var(--gray-2); font-size: 14px; margin-bottom: 32px; }
+    .form { display: flex; flex-direction: column; gap: 18px; }
+    .auth-switch { text-align: center; font-size: 14px; color: var(--gray-2); margin-top: 20px; }
+    .auth-switch a { color: var(--indigo); font-weight: 500; }
+    .password-toggle { position: relative; }
+    .password-toggle input { padding-right: 44px; }
+    .toggle-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--gray-3); cursor: pointer; font-size: 18px;
+    }
+    .strength-bar {
+      height: 3px; border-radius: 3px; background: rgba(255,255,255,.1); margin-top: 6px;
+      overflow: hidden;
+    }
+    .strength-fill { height: 100%; border-radius: 3px; transition: .3s; }
+    .strength-label { font-size: 11px; margin-top: 4px; }
+    .perks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+    .perk  { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-2); }
+    .perk span:first-child { color: var(--teal); }
+    .alert-error {
+      background: rgba(244,63,94,.1); border: 1px solid rgba(244,63,94,.3);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      color: var(--rose); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">Shop<span>Wave</span></div>
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-sub">Join thousands of happy shoppers today</p>
+
+    <div class="perks">
+      <div class="perk"><span>✓</span><span>Free delivery on orders over ₹499</span></div>
+      <div class="perk"><span>✓</span><span>Exclusive member deals and early access</span></div>
+      <div class="perk"><span>✓</span><span>Track your orders in real time</span></div>
+    </div>
+
+    <div id="error-box" class="alert-error hidden" style="margin-bottom:16px"></div>
+
+    <form class="form" id="register-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="name">Full name</label>
+        <input class="form-control" type="text" id="name" placeholder="Arjun Sharma" autocomplete="name" required>
+        <span class="form-error hidden" id="name-err"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email address</label>
+        <input class="form-control" type="email" id="email" placeholder="arjun@example.com" autocomplete="email" required>
+        <span class="form-error hidden" id="email-err"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="password-toggle">
+          <input class="form-control" type="password" id="password" placeholder="At least 6 characters" required>
+          <button type="button" class="toggle-btn" id="toggle-pwd">👁</button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        <div class="strength-label" id="strength-label" style="color:var(--gray-3)"></div>
+        <span class="form-error hidden" id="pwd-err"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm">Confirm password</label>
+        <input class="form-control" type="password" id="confirm" placeholder="Repeat your password" required>
+        <span class="form-error hidden" id="confirm-err"></span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
+        Create Account
+      </button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="/pages/login.html">Login →</a></p>
+  </div>
+</div>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar();
+  renderFooter();
+
+  if (Auth.isLoggedIn()) window.location.href = '/pages/home.html';
+
+  document.getElementById('toggle-pwd').addEventListener('click', () => {
+    const input = document.getElementById('password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+
+  // Password strength meter
+  document.getElementById('password').addEventListener('input', (e) => {
+    const val = e.target.value;
+    const fill = document.getElementById('strength-fill');
+    const label = document.getElementById('strength-label');
+    let score = 0;
+    if (val.length >= 6) score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const levels = [
+      { pct: '0%',   color: 'transparent', text: '' },
+      { pct: '25%',  color: 'var(--rose)',  text: 'Weak' },
+      { pct: '50%',  color: 'var(--amber)', text: 'Fair' },
+      { pct: '75%',  color: '#a3e635',      text: 'Good' },
+      { pct: '100%', color: 'var(--teal)',  text: 'Strong' },
+    ];
+
+    const lvl = levels[Math.min(score, 4)];
+    fill.style.width = lvl.pct;
+    fill.style.background = lvl.color;
+    label.textContent = lvl.text;
+    label.style.color = lvl.color;
+  });
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name     = document.getElementById('name').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm').value;
+    const btn      = document.getElementById('submit-btn');
+    const errBox   = document.getElementById('error-box');
+
+    let valid = true;
+    if (!name || name.length < 2) { showErr('name-err', 'Name must be at least 2 characters'); valid = false; } else clearErr('name-err');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('email-err', 'Enter a valid email address'); valid = false; } else clearErr('email-err');
+    if (!password || password.length < 6) { showErr('pwd-err', 'Password must be at least 6 characters'); valid = false; } else clearErr('pwd-err');
+    if (password !== confirm) { showErr('confirm-err', 'Passwords do not match'); valid = false; } else clearErr('confirm-err');
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+    errBox.classList.add('hidden');
+
+    const res = await API.post('/auth/register', { name, email, password });
+
+    if (res?.success) {
+      Auth.save(res.data.token, res.data);
+      Toast.show(`Welcome to ShopWave, ${res.data.name}!`, 'success');
+      setTimeout(() => window.location.href = '/pages/home.html', 500);
+    } else {
+      errBox.textContent = res?.message || 'Registration failed. Please try again.';
+      errBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+
+  function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.remove('hidden'); }
+  function clearErr(id) { document.getElementById(id).classList.add('hidden'); }
+</script>
+</body>
+</html>

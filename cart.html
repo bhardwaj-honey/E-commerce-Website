@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart — ShopWave</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    .page-header { padding: 40px 0 24px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .cart-layout {
+      display: grid; grid-template-columns: 1fr 340px;
+      gap: 32px; padding: 40px 0 80px;
+    }
+
+    /* Cart items */
+    .cart-item {
+      display: grid; grid-template-columns: 90px 1fr auto;
+      gap: 16px; align-items: start;
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); padding: 20px;
+      margin-bottom: 16px; transition: var(--transition);
+    }
+    .cart-item:hover { border-color: rgba(99,102,241,.2); }
+    .cart-item-img {
+      width: 90px; height: 90px; object-fit: cover;
+      border-radius: var(--radius-sm);
+    }
+    .cart-item-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .cart-item-price { font-size: 13px; color: var(--gray-2); margin-bottom: 12px; }
+    .qty-control {
+      display: flex; align-items: center; gap: 0;
+      background: var(--navy-3); border-radius: var(--radius-sm); overflow: hidden;
+      width: fit-content;
+    }
+    .qty-btn {
+      width: 32px; height: 32px; background: none; border: none;
+      color: var(--white); cursor: pointer; font-size: 16px;
+      transition: var(--transition); display: flex; align-items: center; justify-content: center;
+    }
+    .qty-btn:hover { background: var(--indigo); }
+    .qty-display { min-width: 36px; text-align: center; font-size: 14px; font-weight: 600; }
+    .cart-item-subtotal {
+      font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700;
+      white-space: nowrap;
+    }
+    .remove-btn {
+      background: none; border: none; color: var(--gray-3);
+      cursor: pointer; font-size: 18px; margin-top: 4px;
+      transition: var(--transition); padding: 4px;
+    }
+    .remove-btn:hover { color: var(--rose); }
+
+    /* Order summary */
+    .summary-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); padding: 24px; height: fit-content;
+      position: sticky; top: 80px;
+    }
+    .summary-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .summary-row {
+      display: flex; justify-content: space-between;
+      font-size: 14px; margin-bottom: 12px; color: var(--gray-2);
+    }
+    .summary-row.total {
+      font-size: 18px; font-weight: 700; color: var(--white);
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding-top: 16px; margin-top: 4px;
+    }
+    .free-ship { color: var(--teal); font-size: 13px; text-align: center; margin: 12px 0; }
+
+    /* Checkout form */
+    .checkout-form { display: none; margin-top: 24px; }
+    .checkout-form.visible { display: flex; flex-direction: column; gap: 12px; }
+    .checkout-form h3 { font-size: 16px; margin-bottom: 4px; }
+
+    .empty-cart {
+      text-align: center; padding: 80px 24px;
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius);
+    }
+    .empty-cart div:first-child { font-size: 64px; margin-bottom: 16px; }
+    .empty-cart h2 { margin-bottom: 8px; }
+    .empty-cart p { color: var(--gray-3); margin-bottom: 24px; }
+
+    @media (max-width: 768px) {
+      .cart-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<main>
+  <div class="page-header">
+    <div class="container">
+      <h1>Shopping Cart</h1>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="cart-layout">
+      <div id="cart-items"></div>
+
+      <aside>
+        <div class="summary-card" id="summary-card" style="display:none">
+          <div class="summary-title">Order Summary</div>
+          <div id="summary-rows"></div>
+          <p class="free-ship" id="ship-msg"></p>
+          <button class="btn btn-primary btn-full btn-lg" id="checkout-toggle-btn">
+            Proceed to Checkout
+          </button>
+          <div class="checkout-form" id="checkout-form">
+            <h3>Shipping Details</h3>
+            <input class="form-control" id="ship-name"    placeholder="Full Name" required>
+            <input class="form-control" id="ship-address" placeholder="Address" required>
+            <input class="form-control" id="ship-city"    placeholder="City" required>
+            <input class="form-control" id="ship-state"   placeholder="State">
+            <input class="form-control" id="ship-zip"     placeholder="PIN Code" required>
+            <select class="form-control" id="ship-payment">
+              <option value="COD">Cash on Delivery</option>
+              <option value="UPI">UPI</option>
+              <option value="CARD">Credit / Debit Card</option>
+              <option value="NETBANKING">Net Banking</option>
+            </select>
+            <button class="btn btn-primary btn-full btn-lg" id="place-order-btn">
+              Place Order
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar('cart');
+  renderFooter();
+
+  let cartData = null;
+
+  async function loadCart() {
+    const itemsDiv = document.getElementById('cart-items');
+    const summaryCard = document.getElementById('summary-card');
+
+    if (!Auth.isLoggedIn()) {
+      // Guest cart from localStorage
+      const local = Cart.getLocal();
+      if (local.length === 0) {
+        showEmptyCart();
+        return;
+      }
+      // For guests, redirect to login
+      itemsDiv.innerHTML = `
+        <div class="empty-cart">
+          <div>🔐</div>
+          <h2>Login to view your cart</h2>
+          <p>Your cart items are saved. Login to see them and checkout.</p>
+          <a href="/pages/login.html" class="btn btn-primary btn-lg">Login</a>
+        </div>`;
+      return;
+    }
+
+    const res = await API.get('/cart');
+    if (!res?.success) { Toast.show('Failed to load cart', 'error'); return; }
+
+    cartData = res.data;
+
+    if (cartData.items.length === 0) {
+      showEmptyCart();
+      return;
+    }
+
+    // Render items
+    itemsDiv.innerHTML = cartData.items.map(item => `
+      <div class="cart-item" id="cart-item-${item.id}">
+        <img class="cart-item-img" src="${item.productImage}" alt="${item.productName}" onerror="this.src='https://via.placeholder.com/90'">
+        <div>
+          <div class="cart-item-name">${item.productName}</div>
+          <div class="cart-item-price">${formatINR(item.unitPrice)} each</div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity - 1})">−</button>
+            <span class="qty-display" id="qty-${item.id}">${item.quantity}</span>
+            <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity + 1})">+</button>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="cart-item-subtotal">${formatINR(item.subtotal)}</div>
+          <button class="remove-btn" onclick="removeItem(${item.id})" title="Remove">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Summary
+    const shipping = parseFloat(cartData.shipping);
+    document.getElementById('summary-rows').innerHTML = `
+      <div class="summary-row"><span>Subtotal (${cartData.totalItems} items)</span><span>${formatINR(cartData.subtotal)}</span></div>
+      <div class="summary-row"><span>Shipping</span><span>${shipping === 0 ? '<span class="text-success">Free</span>' : formatINR(shipping)}</span></div>
+      <div class="summary-row total"><span>Total</span><span>${formatINR(cartData.total)}</span></div>
+    `;
+
+    document.getElementById('ship-msg').textContent = shipping === 0
+      ? '✓ You qualify for free shipping!'
+      : `Add ${formatINR(499 - parseFloat(cartData.subtotal))} more for free shipping`;
+
+    summaryCard.style.display = 'block';
+    Cart.updateBadge();
+  }
+
+  async function updateQty(itemId, qty) {
+    await API.put(`/cart/${itemId}?quantity=${qty}`);
+    loadCart();
+  }
+
+  async function removeItem(itemId) {
+    await API.delete(`/cart/${itemId}`);
+    Toast.show('Item removed', 'info');
+    loadCart();
+  }
+
+  function showEmptyCart() {
+    document.getElementById('cart-items').innerHTML = `
+      <div class="empty-cart">
+        <div>🛒</div>
+        <h2>Your cart is empty</h2>
+        <p>Looks like you haven't added anything yet.</p>
+        <a href="/pages/products.html" class="btn btn-primary btn-lg">Start Shopping</a>
+      </div>`;
+    document.getElementById('summary-card').style.display = 'none';
+  }
+
+  // Checkout toggle
+  document.getElementById('checkout-toggle-btn')?.addEventListener('click', () => {
+    if (!Auth.isLoggedIn()) { window.location.href = '/pages/login.html'; return; }
+    const form = document.getElementById('checkout-form');
+    form.classList.toggle('visible');
+    document.getElementById('checkout-toggle-btn').textContent =
+      form.classList.contains('visible') ? '← Back' : 'Proceed to Checkout';
+  });
+
+  // Place order
+  document.getElementById('place-order-btn')?.addEventListener('click', async () => {
+    const body = {
+      shippingName:    document.getElementById('ship-name').value.trim(),
+      shippingAddress: document.getElementById('ship-address').value.trim(),
+      shippingCity:    document.getElementById('ship-city').value.trim(),
+      shippingState:   document.getElementById('ship-state').value.trim(),
+      shippingZip:     document.getElementById('ship-zip').value.trim(),
+      paymentMethod:   document.getElementById('ship-payment').value,
+    };
+
+    if (!body.shippingName || !body.shippingAddress || !body.shippingCity || !body.shippingZip) {
+      Toast.show('Please fill all required shipping fields', 'error'); return;
+    }
+
+    const btn = document.getElementById('place-order-btn');
+    btn.disabled = true; btn.textContent = 'Placing order…';
+
+    const res = await API.post('/orders', body);
+    if (res?.success) {
+      Toast.show('Order placed successfully! 🎉', 'success');
+      setTimeout(() => window.location.href = '/pages/orders.html', 1000);
+    } else {
+      Toast.show(res?.message || 'Order failed', 'error');
+      btn.disabled = false; btn.textContent = 'Place Order';
+    }
+  });
+
+  loadCart();
+</script>
+</body>
+</html>

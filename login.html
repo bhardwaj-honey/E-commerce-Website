@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — ShopWave</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .auth-wrapper {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 48px 24px;
+    }
+    .auth-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px; padding: 48px 40px; width: 100%; max-width: 420px;
+      box-shadow: var(--shadow);
+    }
+    .auth-logo { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .auth-logo span { color: var(--indigo); }
+    .auth-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .auth-sub { color: var(--gray-2); font-size: 14px; margin-bottom: 32px; }
+    .form { display: flex; flex-direction: column; gap: 20px; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.1); }
+    .divider span { color: var(--gray-3); font-size: 12px; }
+    .auth-switch { text-align: center; font-size: 14px; color: var(--gray-2); margin-top: 20px; }
+    .auth-switch a { color: var(--indigo); font-weight: 500; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .password-toggle {
+      position: relative;
+    }
+    .password-toggle input { padding-right: 44px; }
+    .toggle-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--gray-3); cursor: pointer;
+      font-size: 18px; padding: 4px;
+    }
+    .toggle-btn:hover { color: var(--white); }
+    .alert-error {
+      background: rgba(244,63,94,.1); border: 1px solid rgba(244,63,94,.3);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      color: var(--rose); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">Shop<span>Wave</span></div>
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Login to access your orders and wishlist</p>
+
+    <div id="error-box" class="alert-error hidden"></div>
+
+    <form class="form" id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Email address</label>
+        <input class="form-control" type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+        <span class="form-error hidden" id="email-err"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="password-toggle">
+          <input class="form-control" type="password" id="password" placeholder="Your password" autocomplete="current-password" required>
+          <button type="button" class="toggle-btn" id="toggle-pwd" title="Show/hide password">👁</button>
+        </div>
+        <span class="form-error hidden" id="pwd-err"></span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
+        Login
+      </button>
+    </form>
+
+    <div class="divider"><span>or</span></div>
+
+    <p class="auth-switch">Don't have an account? <a href="/pages/register.html">Create one free →</a></p>
+  </div>
+</div>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar();
+  renderFooter();
+
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) window.location.href = '/pages/home.html';
+
+  // Toggle password visibility
+  document.getElementById('toggle-pwd').addEventListener('click', () => {
+    const input = document.getElementById('password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submit-btn');
+    const errBox = document.getElementById('error-box');
+
+    // Validate
+    let valid = true;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showFieldError('email-err', 'Please enter a valid email address');
+      valid = false;
+    } else clearFieldError('email-err');
+
+    if (!password || password.length < 6) {
+      showFieldError('pwd-err', 'Password must be at least 6 characters');
+      valid = false;
+    } else clearFieldError('pwd-err');
+
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
+    errBox.classList.add('hidden');
+
+    const res = await API.post('/auth/login', { email, password });
+
+    if (res?.success) {
+      Auth.save(res.data.token, res.data);
+      Toast.show(`Welcome back, ${res.data.name}!`, 'success');
+      setTimeout(() => window.location.href = '/pages/home.html', 500);
+    } else {
+      errBox.textContent = res?.message || 'Login failed. Please try again.';
+      errBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  });
+
+  function showFieldError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+  function clearFieldError(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders — ShopWave</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    .page-header { padding: 40px 0 24px; border-bottom: 1px solid rgba(255,255,255,.07); margin-bottom: 40px; }
+    .orders-list { max-width: 860px; margin: 0 auto; padding-bottom: 80px; display: flex; flex-direction: column; gap: 20px; }
+
+    .order-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .order-header {
+      display: grid; grid-template-columns: auto 1fr auto auto;
+      gap: 16px; align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      cursor: pointer; transition: var(--transition);
+    }
+    .order-header:hover { background: rgba(255,255,255,.02); }
+    .order-id  { font-size: 13px; font-weight: 600; color: var(--indigo); }
+    .order-date{ font-size: 13px; color: var(--gray-3); }
+    .order-total{ font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; text-align: right; }
+    .order-chevron { color: var(--gray-3); transition: var(--transition); }
+    .order-chevron.open { transform: rotate(180deg); }
+
+    .order-body { display: none; padding: 20px; }
+    .order-body.open { display: block; }
+
+    .order-info-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;
+    }
+    .order-info-item label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-3); display: block; margin-bottom: 4px; }
+    .order-info-item span  { font-size: 14px; font-weight: 500; }
+
+    .order-items-table { width: 100%; border-collapse: collapse; }
+    .order-items-table th {
+      text-align: left; font-size: 12px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--gray-3); padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .order-items-table td { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 14px; }
+    .order-items-table tr:last-child td { border-bottom: none; }
+    .item-img { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-sm); }
+
+    .empty-orders {
+      text-align: center; padding: 80px 24px; background: var(--navy-2);
+      border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius);
+    }
+    .empty-orders div:first-child { font-size: 64px; margin-bottom: 16px; }
+    .empty-orders h2 { margin-bottom: 8px; }
+    .empty-orders p  { color: var(--gray-3); margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<main>
+  <div class="page-header">
+    <div class="container">
+      <h1>My Orders</h1>
+    </div>
+  </div>
+  <div class="container">
+    <div class="orders-list" id="orders-list">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar('orders');
+  renderFooter();
+
+  if (!Auth.isLoggedIn()) window.location.href = '/pages/login.html';
+
+  const STATUS_COLORS = {
+    PENDING:    'badge-amber',
+    PROCESSING: 'badge-indigo',
+    SHIPPED:    'badge-teal',
+    DELIVERED:  'badge-success',
+    CANCELLED:  'badge-rose',
+  };
+
+  async function loadOrders() {
+    const list = document.getElementById('orders-list');
+    const res = await API.get('/orders');
+
+    if (!res?.success || !res.data?.length) {
+      list.innerHTML = `
+        <div class="empty-orders">
+          <div>📦</div>
+          <h2>No orders yet</h2>
+          <p>Your order history will appear here once you make a purchase.</p>
+          <a href="/pages/products.html" class="btn btn-primary btn-lg">Start Shopping</a>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = res.data.map((order, i) => `
+      <div class="order-card">
+        <div class="order-header" onclick="toggleOrder(${i})">
+          <div>
+            <div class="order-id">#${String(order.id).padStart(6, '0')}</div>
+            <div class="order-date">${new Date(order.createdAt).toLocaleDateString('en-IN', {year:'numeric',month:'long',day:'numeric'})}</div>
+          </div>
+          <div>
+            <span class="badge ${STATUS_COLORS[order.status] || 'badge-indigo'}">${order.status}</span>
+            &nbsp;
+            <span class="badge badge-teal">${order.paymentMethod}</span>
+          </div>
+          <div class="order-total">${formatINR(order.totalAmount)}</div>
+          <div class="order-chevron" id="chevron-${i}">▼</div>
+        </div>
+        <div class="order-body" id="order-body-${i}">
+          <div class="order-info-grid">
+            <div class="order-info-item">
+              <label>Ship to</label>
+              <span>${order.shippingName}</span>
+            </div>
+            <div class="order-info-item">
+              <label>Address</label>
+              <span>${order.shippingAddress}, ${order.shippingCity}, ${order.shippingCountry}</span>
+            </div>
+            <div class="order-info-item">
+              <label>Payment</label>
+              <span>${order.paymentMethod} — <span class="badge badge-amber" style="font-size:10px">${order.paymentStatus}</span></span>
+            </div>
+          </div>
+
+          <table class="order-items-table">
+            <thead>
+              <tr>
+                <th style="width:52px"></th>
+                <th>Product</th>
+                <th style="text-align:right">Qty</th>
+                <th style="text-align:right">Price</th>
+                <th style="text-align:right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td><img class="item-img" src="${item.productImage}" alt="${item.productName}" onerror="this.src='https://via.placeholder.com/44'"></td>
+                  <td>${item.productName}</td>
+                  <td style="text-align:right">${item.quantity}</td>
+                  <td style="text-align:right">${formatINR(item.unitPrice)}</td>
+                  <td style="text-align:right;font-weight:600">${formatINR(item.subtotal)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleOrder(idx) {
+    const body    = document.getElementById(`order-body-${idx}`);
+    const chevron = document.getElementById(`chevron-${idx}`);
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

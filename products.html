@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — ShopWave</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.js">
+  <style>
+    .page-header {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .page-header h1 { font-size: 36px; }
+    .search-bar {
+      display: flex; gap: 12px; margin-top: 20px; max-width: 500px;
+    }
+    .search-bar input { flex: 1; }
+
+    .products-layout {
+      display: grid; grid-template-columns: 240px 1fr; gap: 32px;
+      padding: 40px 0 64px;
+    }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 24px; }
+    .filter-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .filter-title { font-weight: 600; font-size: 14px; margin-bottom: 14px; }
+    .filter-list  { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .filter-item  {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer;
+      font-size: 14px; transition: var(--transition); color: var(--gray-2);
+    }
+    .filter-item:hover  { background: rgba(255,255,255,.05); color: var(--white); }
+    .filter-item.active { background: var(--indigo-lt); color: var(--indigo); }
+    .filter-count { background: rgba(255,255,255,.07); padding: 2px 7px; border-radius: 4px; font-size: 11px; }
+
+    /* Products area */
+    .products-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+    .sort-select {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius-sm); padding: 8px 14px;
+      color: var(--white); font-size: 14px; cursor: pointer;
+    }
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;
+    }
+    .product-card {
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--radius); overflow: hidden; transition: var(--transition);
+    }
+    .product-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,.4); border-color: rgba(99,102,241,.3); }
+    .product-img { width: 100%; height: 200px; object-fit: cover; cursor: pointer; }
+    .product-body { padding: 14px; }
+    .product-cat { font-size: 11px; font-weight: 600; color: var(--indigo); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .product-name { font-weight: 600; font-size: 14px; margin-bottom: 8px; line-height: 1.4; cursor: pointer; }
+    .product-name:hover { color: var(--indigo); }
+    .product-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .price { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+    .price-old { font-size: 12px; color: var(--gray-3); text-decoration: line-through; margin-left: 4px; }
+    .discount-tag { background: rgba(244,63,94,.15); color: var(--rose); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 40px; }
+    .page-btn {
+      width: 38px; height: 38px; border-radius: var(--radius-sm);
+      background: var(--navy-2); border: 1px solid rgba(255,255,255,.1);
+      color: var(--gray-2); font-size: 14px; cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn:hover, .page-btn.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .empty-state { text-align: center; padding: 60px; color: var(--gray-3); }
+    .empty-state div { font-size: 48px; margin-bottom: 12px; }
+
+    @media (max-width: 768px) {
+      .products-layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar" id="navbar"></header>
+
+<main>
+  <div class="page-header">
+    <div class="container">
+      <h1>All Products</h1>
+      <div class="search-bar">
+        <input class="form-control" type="text" id="search-input" placeholder="Search products…">
+        <button class="btn btn-primary" id="search-btn">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="products-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="filter-card">
+          <div class="filter-title">Categories</div>
+          <ul class="filter-list" id="category-list">
+            <li class="filter-item active" data-id="">All Categories</li>
+          </ul>
+        </div>
+        <div class="filter-card">
+          <div class="filter-title">Price Range</div>
+          <ul class="filter-list">
+            <li class="filter-item price-filter active" data-min="" data-max="">All Prices</li>
+            <li class="filter-item price-filter" data-min="0" data-max="999">Under ₹999</li>
+            <li class="filter-item price-filter" data-min="1000" data-max="4999">₹1,000 – ₹4,999</li>
+            <li class="filter-item price-filter" data-min="5000" data-max="19999">₹5,000 – ₹19,999</li>
+            <li class="filter-item price-filter" data-min="20000" data-max="">₹20,000+</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Products -->
+      <div>
+        <div class="products-header">
+          <span id="result-count" style="color:var(--gray-3);font-size:14px"></span>
+          <select class="sort-select" id="sort-select">
+            <option value="createdAt,desc">Newest First</option>
+            <option value="price,asc">Price: Low to High</option>
+            <option value="price,desc">Price: High to Low</option>
+            <option value="rating,desc">Top Rated</option>
+          </select>
+        </div>
+
+        <div class="products-grid" id="products-grid">
+          <div class="spinner"></div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="../js/app.js"></script>
+<script>
+  renderNavbar('products');
+  renderFooter();
+
+  let currentPage  = 0;
+  let currentCat   = '';
+  let currentSearch= '';
+  let currentSort  = 'createdAt,desc';
+  const PAGE_SIZE  = 12;
+
+  // Read URL params
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('category')) currentCat = params.get('category');
+  if (params.get('search'))   currentSearch = params.get('search');
+
+  async function loadCategories() {
+    const res = await API.get('/categories');
+    if (!res?.data) return;
+    const list = document.getElementById('category-list');
+    res.data.forEach(cat => {
+      const li = document.createElement('li');
+      li.className = 'filter-item' + (String(currentCat) === String(cat.id) ? ' active' : '');
+      li.dataset.id = cat.id;
+      li.innerHTML = `${cat.name}`;
+      li.addEventListener('click', () => {
+        currentCat = cat.id;
+        currentPage = 0;
+        document.querySelectorAll('#category-list .filter-item').forEach(el => el.classList.remove('active'));
+        li.classList.add('active');
+        loadProducts();
+      });
+      list.appendChild(li);
+    });
+
+    // "All" click
+    list.querySelector('[data-id=""]')?.addEventListener('click', (e) => {
+      currentCat = '';
+      currentPage = 0;
+      document.querySelectorAll('#category-list .filter-item').forEach(el => el.classList.remove('active'));
+      e.target.classList.add('active');
+      loadProducts();
+    });
+  }
+
+  async function loadProducts() {
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = '<div class="spinner"></div>';
+
+    const [sortBy, dir] = currentSort.split(',');
+    let url = `/products?page=${currentPage}&size=${PAGE_SIZE}&sortBy=${sortBy}&dir=${dir}`;
+    if (currentCat)    url += `&categoryId=${currentCat}`;
+    if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+
+    const res = await API.get(url);
+    if (!res?.data) {
+      grid.innerHTML = '<p style="color:var(--rose)">Failed to load products. Is the backend running?</p>';
+      return;
+    }
+
+    const page = res.data;
+    document.getElementById('result-count').textContent = `${page.totalElements} products found`;
+
+    if (page.content.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div>🔍</div>
+          <p>No products found. Try a different search or category.</p>
+        </div>`;
+    } else {
+      grid.innerHTML = page.content.map(renderCard).join('');
+    }
+
+    renderPagination(page);
+  }
+
+  function renderCard(p) {
+    const hasDiscount = p.discountPercent > 0;
+    return `
+      <div class="product-card">
+        <img class="product-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/240x200'">
+        <div class="product-body">
+          <div class="product-cat">${p.categoryName}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-meta">
+            <span class="stars">${renderStars(p.rating)}</span>
+            <span style="font-size:12px;color:var(--gray-3)">(${p.reviewCount?.toLocaleString() || 0})</span>
+          </div>
+          <div class="price-row">
+            <div>
+              <span class="price">${formatINR(p.price)}</span>
+              ${hasDiscount ? `<span class="price-old">${formatINR(p.originalPrice)}</span>` : ''}
+            </div>
+            ${hasDiscount ? `<span class="discount-tag">${p.discountPercent}% OFF</span>` : ''}
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="Cart.addItem(${p.id})">Add to Cart</button>
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='/pages/product-detail.html?id=${p.id}'">View</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPagination(page) {
+    const pag = document.getElementById('pagination');
+    const total = page.totalPages;
+    if (total <= 1) { pag.innerHTML = ''; return; }
+
+    let html = '';
+    html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===0?'disabled':''}>←</button>`;
+    for (let i = 0; i < total; i++) {
+      if (i === 0 || i === total-1 || Math.abs(i - currentPage) <= 1) {
+        html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i+1}</button>`;
+      } else if (Math.abs(i - currentPage) === 2) {
+        html += `<span style="color:var(--gray-3);padding:8px">…</span>`;
+      }
+    }
+    html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total-1?'disabled':''}>→</button>`;
+    pag.innerHTML = html;
+  }
+
+  function goPage(p) {
+    currentPage = p;
+    loadProducts();
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+
+  // Search
+  if (currentSearch) document.getElementById('search-input').value = currentSearch;
+
+  document.getElementById('search-btn').addEventListener('click', () => {
+    currentSearch = document.getElementById('search-input').value.trim();
+    currentPage = 0;
+    loadProducts();
+  });
+
+  document.getElementById('search-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('search-btn').click();
+  });
+
+  document.getElementById('sort-select').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    currentPage = 0;
+    loadProducts();
+  });
+
+  loadCategories();
+  loadProducts();
+</script>
+</body>
+</html>
